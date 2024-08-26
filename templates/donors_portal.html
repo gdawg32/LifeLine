@@ -107,15 +107,18 @@
             <div class="card-body">
                 <h2 class="card-title">Book Appointment</h2>
                 <p class="py-6">Please select your preferred date and time.</p>
-                <form method="post" action="{% url "book_appointment" %}">
+                <form id="appointment-form" method="post" action="{% url 'book_appointment' %}">
                     {% csrf_token %}
                     <div class="form-control">
                         <label class="label" for="date">Date</label>
                         <input type="date" name="date" id="date" class="input input-bordered w-full" required>
+                        <span id="date-error" class="text-red-500 hidden">Please select a valid future date.</span>
                     </div>
                     <div class="form-control">
                         <label class="label" for="time">Time</label>
-                        <input type="time" name="time" id="time" class="input input-bordered w-full" required>
+                        <input type="time" name="time" id="time" class="input input-bordered w-full" required
+                               min="08:00" max="19:00" step="900">
+                        <span id="time-error" class="text-red-500 hidden">Please select a time between 8:00 AM and 7:00 PM.</span>
                     </div>
                     <div class="form-control mt-6">
                         <button class="btn btn-neutral w-full">Book</button>
@@ -123,6 +126,43 @@
                 </form>
             </div>
         </div>
+        
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const dateInput = document.getElementById('date');
+                const timeInput = document.getElementById('time');
+        
+                // Set the minimum date to today's date
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.setAttribute('min', today);
+        
+                // Disable past time on the current date
+                dateInput.addEventListener('change', function () {
+                    const selectedDate = new Date(dateInput.value);
+                    const now = new Date();
+                    
+                    if (selectedDate.toDateString() === now.toDateString()) {
+                        const currentHour = now.getHours();
+                        const currentMinute = now.getMinutes();
+                        
+                        // Ensure the time is within working hours
+                        if (currentHour < 8) {
+                            timeInput.value = '';
+                            timeInput.setAttribute('min', '08:00');
+                        } else if (currentHour >= 19) {
+                            timeInput.value = '';
+                            timeInput.setAttribute('min', '19:00');
+                        } else {
+                            const minTime = `${String(currentHour).padStart(2, '0')}:${String(Math.ceil(currentMinute / 15) * 15).padStart(2, '0')}`;
+                            timeInput.setAttribute('min', minTime);
+                        }
+                    } else {
+                        timeInput.setAttribute('min', '08:00');
+                        timeInput.setAttribute('max', '19:00');
+                    }
+                });
+            });
+        </script>
 
         <div class="card bg-base-100 shadow-xl">
             <div class="card-body">

@@ -45,7 +45,7 @@ def donors_signup(request):
         )
         donor.save()
 
-        return HttpResponse('Donor Saved Successfully')
+        return redirect('donors_login')
 
     return render(request, 'donors_signup.html')
 
@@ -165,9 +165,6 @@ def book_appointment(request):
             appointment_date=appointment_date,
             appointment_time=appointment_time
         )
-
-        # Add a success message
-        messages.success(request, 'Appointment booked successfully!')
 
         # Redirect back to the same page
         return redirect(request.META.get('HTTP_REFERER', '/'))
