@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Donor Login{% endblock %}
+
+{% block content %}
+
+<div class="hero bg-base-200 min-h-screen">
+    <div class="hero-content flex-col lg:flex-row-reverse">
+        <div class="text-center lg:text-left lg:w-1/2">
+            <h1 class="text-5xl font-bold">Welcome to LifeLine</h1>
+            <p class="py-6">Please login to access your account</p>
+        </div>
+        <div class="card flex-shrink-0 lg:w-1/2 shadow-2xl bg-base-100">
+            <div class="card-body">
+                <form action="{% url 'donors_login' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Email</span>
+                        </label>
+                        <input type="email" name="email" placeholder="email" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Password</span>
+                        </label>
+                        <input type="password" name="password" placeholder="password" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control mt-6">
+                        <button class="btn btn-primary w-full">Login</button>
+                    </div>
+                    <div class="form-control mt-6">
+                        <a href="{% url 'donors_signup' %}" class="btn btn-secondary w-full">Donor Signup</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

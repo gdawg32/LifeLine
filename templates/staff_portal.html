@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% block title %}Staff Portal{% endblock %}
+
+{% block content %}
+<div class="hero bg-base-200 mb-8 flex flex-col items-center px-4 md:px-0">
+    <div class="text-center mt-8 mb-8">
+        <h1 class="text-5xl font-bold">Staff Portal</h1>
+        <p class="py-6">Welcome back, {{ user.username }}!</p>
+        <a href="{% url 'logout' %}" class="btn btn-outline btn-default">Logout</a>
+        {% if messages %}
+        <div class="mt-4">
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %} shadow-lg">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="max-w-3xl mx-auto mt-12 text-center mb-12 px-4 md:px-0">
+    <h2 class="text-3xl font-bold">Menu</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <label for="donors_modal" class="btn btn-accent">Donors List</label>
+        <label for="appointment_modal" class="btn btn-accent">Appointment List</label>
+        <label for="donation_modal" class="btn btn-accent">Donation List</label>
+        <label for="blood_modal" class="btn btn-accent"> Blood Stock</label>
+    </div>
+</div>
+
+<!-- Blood Modal -->
+<input type="checkbox" id="blood_modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-5xl">
+    <h3 class="text-lg font-bold">Blood Stock</h3>
+    <div class="overflow-x-auto py-4">
+      <table class="table w-full">
+        <thead>
+          <tr>
+            <th>Blood Type</th>
+            <th>Quantity (ml)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in blood_stock %}
+          <tr>
+            <td>{{ stock.donor__blood_type }}</td>
+            <td>{{ stock.total_volume }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-action">
+      <label for="blood_modal" class="btn">Close</label>
+    </div>
+  </div>
+</div>
+
+
+<!-- Donors Modal -->
+<input type="checkbox" id="donors_modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-5xl">
+    <h3 class="text-lg font-bold">Donors List</h3>
+    <div class="overflow-x-auto py-4">
+      <table class="table w-full">
+        <thead>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Blood Type</th>
+            <th>Date of Birth</th>
+            <th>Phone Number</th>
+            <th>Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for donor in donors %}
+          <tr>
+            <td>{{ donor.first_name }}</td>
+            <td>{{ donor.last_name }}</td>
+            <td>{{ donor.blood_type }}</td>
+            <td>{{ donor.date_of_birth }}</td>
+            <td>{{ donor.phone_number }}</td>
+            <td>{{ donor.address }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-action">
+      <label for="donors_modal" class="btn">Close</label>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-3xl mx-auto mt-12 text-center mb-12 px-4 md:px-0">
+  <h2 class="text-3xl font-bold">Recipient Management</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+      <!-- Add Recipient Button -->
+      <label for="add_recipient_modal" class="btn btn-primary">Add Recipient</label>
+      <!-- View Recipients Button -->
+      <label for="view_recipients_modal" class="btn btn-secondary">View All Recipients</label>
+  </div>
+</div>
+
+<!-- Add Recipient Modal -->
+<input type="checkbox" id="add_recipient_modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-lg">
+    <h3 class="text-lg font-bold">Add Recipient</h3>
+    <form id="recipient-form" method="post" action="{% url 'add_recipient' %}">
+      {% csrf_token %}
+      <div class="form-control">
+        <label class="label" for="first_name">First Name</label>
+        <input type="text" name="first_name" id="first_name" class="input input-bordered w-full" required />
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="last_name">Last Name</label>
+        <input type="text" name="last_name" id="last_name" class="input input-bordered w-full" required />
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="date_of_birth">Date of Birth</label>
+        <input type="date" name="date_of_birth" id="date_of_birth" class="input input-bordered w-full" required />
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="gender">Gender</label>
+        <select class="select select-bordered w-full" name="gender" id="gender" required>
+          <option value="" selected disabled hidden>Select</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="blood_type">Blood Type</label>
+        <select class="select select-bordered w-full" name="blood_type" id="blood_type" required>
+          <option value="" selected disabled hidden>Select</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+        </select>
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="volume">Volume (ml)</label>
+        <input type="number" name="volume" id="volume" step="0.01" class="input input-bordered w-full" required />
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="phone_number">Phone Number</label>
+        <input type="tel" name="phone_number" id="phone_number" class="input input-bordered w-full" />
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="email">Email</label>
+        <input type="email" name="email" id="email" class="input input-bordered w-full" />
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="address">Address</label>
+        <textarea name="address" id="address" class="textarea textarea-bordered w-full"></textarea>
+      </div>
+      <div class="form-control mt-2">
+        <label class="label" for="hospital">Hospital</label>
+        <input type="text" name="hospital" id="hospital" class="input input-bordered w-full" />
+      </div>
+      <div class="form-control mt-4">
+        <button type="submit" class="btn btn-success w-full">Add Recipient</button>
+      </div>
+      <div class="form-control mt-2">
+        <label for="add_recipient_modal" class="btn">Close</label>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- View Recipients Modal -->
+<input type="checkbox" id="view_recipients_modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-5xl">
+      <h3 class="text-lg font-bold">All Recipients</h3>
+      <div class="overflow-x-auto py-4">
+          <table class="table w-full">
+              <thead>
+                  <tr>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Blood Type</th>
+                      <th>Volume (ml)</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for recipient in recipients %}
+                  <tr>
+                      <td>{{ recipient.first_name }}</td>
+                      <td>{{ recipient.last_name }}</td>
+                      <td>{{ recipient.blood_type }}</td>
+                      <td>{{ recipient.volume }}</td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+      </div>
+      <div class="modal-action">
+          <label for="view_recipients_modal" class="btn">Close</label>
+      </div>
+  </div>
+</div>
+
+
+<!-- Appointment Modal -->
+<input type="checkbox" id="appointment_modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-md">
+    <h3 class="text-lg font-bold">Appointments for the day</h3>
+    <div class="py-4">
+      <input type="date" id="date" class="input input-bordered w-full" />
+    </div>
+    <div class="overflow-x-auto">
+      <table class="table w-full">
+        <thead>
+          <tr>
+            <th>Donor</th>
+            <th>Time</th>
+            <th>Add Donation</th>
+          </tr>
+        </thead>
+        <tbody id="appointments-list">
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-action">
+      <label for="appointment_modal" class="btn">Close</label>
+    </div>
+  </div>
+</div>
+
+<!-- Add Donation Modal -->
+<input type="checkbox" id="add-donation-modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-md">
+    <h3 class="text-lg font-bold">Add Donation</h3>
+    <form id="donation-form">
+      {% csrf_token %}
+      <input type="hidden" name="appointment_id" id="hidden-appointment-id" />
+      <div class="form-control">
+        <label class="label" for="volume">Volume (ml)</label>
+        <input type="number" name="volume" id="volume" class="input input-bordered w-full" required />
+      </div>
+      <div class="form-control mt-4">
+        <button type="submit" class="btn btn-success w-full">Submit Donation</button>
+      </div>
+      <div class="form-control mt-2">
+        <label for="add-donation-modal" class="btn">Close</label>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Donations Modal -->
+<input type="checkbox" id="donation_modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+  <div class="modal-box w-11/12 max-w-md">
+    <h3 class="text-lg font-bold">Donations</h3>
+    <div class="overflow-x-auto">
+      <table class="table w-full">
+        <thead>
+          <tr>
+            <th>Donor</th>
+            <th>Date</th>
+            <th>Volume (ml)</th>
+          </tr>
+        </thead>
+        <tbody id="donations-list">
+          {% for donation in donations %}
+          <tr>
+            <td>{{ donation.donor }}</td>
+            <td>{{ donation.date_of_donation }}</td>
+            <td class="flex items-center gap-1">
+              <span class="badge badge-primary">{{ donation.used_volume }}</span>
+              <span class="text-sm">/</span>
+              <span class="badge badge-secondary">{{ donation.total_volume }}</span>
+          </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-action">
+      <label for="donation_modal" class="btn">Close</label>
+    </div>
+  </div>
+</div>
+
+<script>
+  const dateEl = document.getElementById('date');
+  const appointmentsListEl = document.getElementById('appointments-list');
+
+  dateEl.addEventListener('change', async (e) => {
+    const date = e.target.value;
+    const res = await fetch(`/staff_portal/appointments/${date}`);
+    const appointments = await res.json();
+    appointmentsListEl.innerHTML = '';
+    appointments.forEach(appointment => {
+      const tr = document.createElement('tr');
+      console.log('Appointment:', appointment);
+      tr.innerHTML = `
+        <td>${appointment.donor}</td>
+        <td>${appointment.time}</td>
+        <td>
+          <button class="btn btn-primary btn-xs" onclick="openAddDonationModal(${appointment.id})">Add Donation</button>
+        </td>
+      `;
+      appointmentsListEl.appendChild(tr);
+    });
+  });
+
+  const openAddDonationModal = (appointmentId) => {
+    console.log('Opening modal for appointment ID:', appointmentId); // Log the appointment ID
+    const addDonationModal = document.getElementById('add-donation-modal');
+    const hiddenAppointmentId = document.getElementById('hidden-appointment-id');
+    hiddenAppointmentId.value = appointmentId; // Set the hidden input value
+    addDonationModal.checked = true; // Open the modal by checking the checkbox
+  }
+
+  document.getElementById('donation-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const volume = e.target.querySelector('input[name="volume"]').value;
+    console.log('Submitting donation for volume:', volume); // Log the volume
+    const appointmentId = document.getElementById('hidden-appointment-id').value;
+
+    console.log('Submitting donation for appointment ID:', appointmentId); // Log the appointment ID
+    const formData = new FormData();
+    formData.append('volume', volume);
+
+    await fetch(`add_donation/${appointmentId}/`, {
+      method: 'POST',
+      headers: { 
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+      },
+      body: formData,
+    });
+
+    document.getElementById('add-donation-modal').checked = false; // Close the modal
+    window.location.reload();
+    
+  });
+</script>
+
+{% endblock %}

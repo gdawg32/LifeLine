@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Donors Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto p-4 mt-4">
+    <div class="flex justify-between items-center">
+        <h2 class="text-3xl font-bold">Welcome, {{ user.first_name }}!</h2>
+        <a href="{% url 'logout' %}" class="btn btn-error btn-sm">Logout</a>
+    </div>
+    <p class="py-6">This is your donor portal. You can view your donations, update your information, and more.</p>
+    {% if messages %}
+    <div class="alert alert-success shadow-lg mb-4">
+        {% for message in messages %}
+        <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="grid grid-cols-1 gap-4">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-2 text-primary-content">Your Information</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-bold">Name:</h3>
+                        <p class="py-2">{{ user.first_name }} {{ user.last_name }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Date of Birth:</h3>
+                        <p class="py-2">{{ donor.date_of_birth|date:'Y-m-d' }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Blood Type:</h3>
+                        <p class="py-2">{{ donor.blood_type }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">Phone Number:</h3>
+                        <p class="py-2">{{ donor.phone_number }}</p>
+                    </div>
+                    <div class="col-span-2">
+                        <h3 class="font-bold">Address:</h3>
+                        <p class="py-2">{{ donor.address }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Your Donations</h2>
+                <p class="py-6">You have made {{ donations.count }} donations.</p>
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Volume (ml)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for donation in donations %}
+                            <tr>
+                                <td>{{ donation.date_of_donation }}</td>
+                                <td class="flex items-center gap-1">
+                                    <span class="badge badge-primary">{{ donation.used_volume }}</span>
+                                    <span class="text-sm">/</span>
+                                    <span class="badge badge-secondary">{{ donation.total_volume }}</span>
+                                </td>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Upcoming Appointments</h2>
+                <p class="py-6">You have {{ upcoming_appointments.count }} upcoming appointments.</p>
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Cancel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in upcoming_appointments %}
+                            <tr>
+                                <td>{{ appointment.appointment_date }}</td>
+                                <td>{{ appointment.appointment_time }}</td>
+                                <td>
+                                    <form method="post" action="{% url "cancel_appointment" appointment.id %}">
+                                        {% csrf_token %}
+                                        <button class="btn btn-error btn-sm">Cancel</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Book Appointment</h2>
+                <p class="py-6">Please select your preferred date and time.</p>
+                <form method="post" action="{% url "book_appointment" %}">
+                    {% csrf_token %}
+                    <div class="form-control">
+                        <label class="label" for="date">Date</label>
+                        <input type="date" name="date" id="date" class="input input-bordered w-full" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="time">Time</label>
+                        <input type="time" name="time" id="time" class="input input-bordered w-full" required>
+                    </div>
+                    <div class="form-control mt-6">
+                        <button class="btn btn-neutral w-full">Book</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Update Your Information</h2>
+                <p class="py-6">Please enter your new information below.</p>
+                <form method="post" action="{% url 'edit_profile' %}">
+                    {% csrf_token %}
+                    <div class="form-control">
+                        <label class="label" for="first_name">First Name</label>
+                        <input type="text" name="first_name" id="first_name" class="input input-bordered w-full" value="{{ user.first_name }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="last_name">Last Name</label>
+                        <input type="text" name="last_name" id="last_name" class="input input-bordered w-full" value="{{ user.last_name }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="date_of_birth">Date of Birth</label>
+                        <input type="date" name="date_of_birth" id="date_of_birth" class="input input-bordered w-full" value="{{ donor.date_of_birth|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="gender">Gender</label>
+                        <select class="select select-bordered w-full" name="gender" id="gender" required>
+                            <option value="" selected disabled hidden>Select</option>
+                            <option value="Male" {% if donor.gender == "Male" %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if donor.gender == "Female" %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if donor.gender == "Other" %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="blood_type">Blood Type</label>
+                        <select class="select select-bordered w-full" name="blood_type" id="blood_type" required>
+                            <option value="" selected disabled hidden>Select</option>
+                            <option value="A+" {% if donor.blood_type == "A+" %}selected{% endif %}>A+</option>
+                            <option value="A-" {% if donor.blood_type == "A-" %}selected{% endif %}>A-</option>
+                            <option value="B+" {% if donor.blood_type == "B+" %}selected{% endif %}>B+</option>
+                            <option value="B-" {% if donor.blood_type == "B-" %}selected{% endif %}>B-</option>
+                            <option value="O+" {% if donor.blood_type == "O+" %}selected{% endif %}>O+</option>
+                            <option value="O-" {% if donor.blood_type == "O-" %}selected{% endif %}>O-</option>
+                            <option value="AB+" {% if donor.blood_type == "AB+" %}selected{% endif %}>AB+</option>
+                            <option value="AB-" {% if donor.blood_type == "AB-" %}selected{% endif %}>AB-</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="phone_number">Phone Number</label>
+                        <input type="text" name="phone_number" id="phone_number" class="input input-bordered w-full" value="{{ donor.phone_number }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="email">Email</label>
+                        <input type="email" name="email" id="email" class="input input-bordered w-full" value="{{ user.email }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="address">Address</label>
+                        <textarea class="textarea textarea-bordered w-full" name="address" id="address" rows="3" required>{{ donor.address }}</textarea>
+                    </div>
+                    <div class="form-control mt-6">
+                        <button class="btn btn-primary w-full">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
