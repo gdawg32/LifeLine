@@ -1,12 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
-from .models import Donor, Appointment, Donation, Recipient
+from .models import Donor, Appointment, Donation, Recipient, BloodRequest
 from django.contrib.auth.models import User, Group
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import datetime
 from django.db.models import Sum
+from django.utils import timezone
+import io
+from django.http import FileResponse, Http404
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from datetime import datetime
 
 def index(request):
     return render(request, 'index.html')
@@ -115,7 +122,7 @@ def donors_portal(request):
     donations = Donation.objects.filter(donor=donor)
     for donation in donations:
         donation.total_volume = donation.used_volume + donation.volume
-    upcoming_appointments = Appointment.objects.filter(donor=donor, appointment_date__gte=datetime.date.today())
+    upcoming_appointments = Appointment.objects.filter(donor=donor, appointment_date__gte=datetime.now())
     context = {
         'donor': donor,
         'upcoming_appointments': upcoming_appointments,
@@ -215,17 +222,33 @@ def add_recipient(request):
         # Get the form data
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
-        blood_type = request.POST.get('blood_type')
+        recipient_blood_type = request.POST.get('blood_type')
         required_volume = float(request.POST.get('volume'))
 
-        # Get donations of the same blood type
-        donations = Donation.objects.filter(donor__blood_type=blood_type).order_by('date_of_donation')
+        # Define blood type compatibility
+        blood_type_compatibility = {
+            'O-': ['O-'],
+            'O+': ['O-', 'O+'],
+            'A-': ['O-', 'A-'],
+            'A+': ['O-', 'O+', 'A-', 'A+'],
+            'B-': ['O-', 'B-'],
+            'B+': ['O-', 'O+', 'B-', 'B+'],
+            'AB-': ['O-', 'A-', 'B-', 'AB-'],
+            'AB+': ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+']
+        }
+
+        # Get donations of compatible blood types
+        compatible_blood_types = blood_type_compatibility.get(recipient_blood_type, [])
+        donations = Donation.objects.filter(donor__blood_type__in=compatible_blood_types).order_by('date_of_donation')
 
         total_available_volume = 0
         selected_donations = []
 
-        # Check if enough volume is available across multiple donations
+        # Check if enough volume is available across multiple donations without mixing blood types
         for donation in donations:
+            if donation.donor.blood_type != recipient_blood_type and selected_donations:
+                # Don't mix blood types
+                continue
             available_volume = donation.volume - donation.used_volume
             if total_available_volume >= required_volume:
                 break
@@ -234,8 +257,8 @@ def add_recipient(request):
                 total_available_volume += available_volume
 
         if total_available_volume < required_volume:
-            messages.error(request, "Not enough matching blood type available.")
-            return redirect('staff_portal')  # Redirect to an appropriate page
+            messages.error(request, "Not enough compatible blood type available.")
+            return redirect('staff_portal')
 
         remaining_volume = required_volume
         for donation in selected_donations:
@@ -256,11 +279,11 @@ def add_recipient(request):
         recipient = Recipient.objects.create(
             first_name=first_name,
             last_name=last_name,
-            blood_type=blood_type,
+            blood_type=recipient_blood_type,
             date_of_birth=request.POST.get('date_of_birth'),
             gender=request.POST.get('gender'),
             phone_number=request.POST.get('phone_number'),
-            volume = required_volume,
+            volume=required_volume,
             email=request.POST.get('email'),
             address=request.POST.get('address'),
             hospital=request.POST.get('hospital'),
@@ -269,6 +292,188 @@ def add_recipient(request):
         # Success message
         messages.success(request, f"Recipient {first_name} {last_name} added successfully!")
 
-        return redirect('staff_portal')  # Redirect to an appropriate page
+        return redirect('staff_portal')
+    
+def request_blood(request):
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        date_of_birth = request.POST.get('date_of_birth')
+        gender = request.POST.get('gender')
+        blood_type = request.POST.get('blood_type')
+        volume = float(request.POST.get('volume'))
+        phone_number = request.POST.get('phone_number')
+        email = request.POST.get('email')
+        address = request.POST.get('address')
+        hospital = request.POST.get('hospital')
+        needed_by = request.POST.get('needed_by')
+        urgency_level = request.POST.get('urgency')
 
+        try:
+            # Create BloodRequest
+            blood_request = BloodRequest.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                date_of_birth=date_of_birth,
+                gender=gender,
+                blood_type=blood_type,
+                volume=volume,
+                phone_number=phone_number,
+                email=email,
+                address=address,
+                hospital=hospital,
+                needed_by=needed_by,
+                urgency_level=urgency_level,
+                status='Pending'
+            )
+            blood_request.save()
 
+            # Success message
+            messages.success(request, 'Your blood request has been submitted successfully!')
+            return redirect('index')  # Reload the same page to display the modal
+
+        except Exception as e:
+            # Error handling
+            messages.error(request, 'Something went wrong. Please try again.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        
+def view_blood_request(request):
+    current_time = timezone.localtime()
+    blood_requests = BloodRequest.objects.filter(needed_by__gte=current_time.date()).exclude(status='Processed')
+    return JsonResponse({'blood_requests': list(blood_requests.values())})
+
+@login_required
+def add_blood_request_to_recipient(request, request_id):
+    # Fetch the blood request using the request_id
+    blood_request = get_object_or_404(BloodRequest, request_id=request_id)
+    
+    if request.method == 'POST':
+        # Get the blood request data
+        first_name = blood_request.first_name
+        last_name = blood_request.last_name
+        recipient_blood_type = blood_request.blood_type
+        required_volume = blood_request.volume
+
+        # Define blood type compatibility
+        blood_type_compatibility = {
+            'O-': ['O-'],
+            'O+': ['O-', 'O+'],
+            'A-': ['O-', 'A-'],
+            'A+': ['O-', 'O+', 'A-', 'A+'],
+            'B-': ['O-', 'B-'],
+            'B+': ['O-', 'O+', 'B-', 'B+'],
+            'AB-': ['O-', 'A-', 'B-', 'AB-'],
+            'AB+': ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+']
+        }
+
+        # Get donations of compatible blood types
+        compatible_blood_types = blood_type_compatibility.get(recipient_blood_type, [])
+        donations = Donation.objects.filter(donor__blood_type__in=compatible_blood_types).order_by('date_of_donation')
+
+        total_available_volume = 0
+        selected_donations = []
+
+        # Check if enough volume is available across multiple donations without mixing blood types
+        for donation in donations:
+            if donation.donor.blood_type != recipient_blood_type and selected_donations:
+                # Don't mix blood types
+                continue
+            available_volume = donation.volume - donation.used_volume
+            if total_available_volume >= required_volume:
+                break
+            if available_volume > 0:
+                selected_donations.append(donation)
+                total_available_volume += available_volume
+
+        if total_available_volume < required_volume:
+            messages.error(request, "Not enough compatible blood type available.")
+            return redirect('staff_portal')
+
+        remaining_volume = required_volume
+        for donation in selected_donations:
+            available_volume = donation.volume - donation.used_volume
+            if remaining_volume <= 0:
+                break
+            if available_volume >= remaining_volume:
+                donation.used_volume += remaining_volume
+                remaining_volume = 0
+            else:
+                donation.used_volume += available_volume
+                remaining_volume -= available_volume
+            donation.save()
+
+        # Create the recipient from the blood request data
+        recipient = Recipient.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            blood_type=recipient_blood_type,
+            date_of_birth=blood_request.date_of_birth,
+            gender=blood_request.gender,
+            phone_number=blood_request.phone_number,
+            volume=required_volume,
+            email=blood_request.email,
+            address=blood_request.address,
+            hospital=blood_request.hospital,
+        )
+
+        # Update the blood request status to 'Processed'
+        blood_request.status = 'Processed'
+        blood_request.save()
+
+        recipient.save()
+
+        # Success message
+        messages.success(request, f"Recipient {first_name} {last_name} added successfully!")
+
+        return redirect('staff_portal')
+
+def generate_custom_certificate_with_template(donor_name, donation_date, template_path):
+    # Create a BytesIO buffer to hold the PDF in memory
+    buffer = io.BytesIO()
+
+    # Create the PDF canvas using BytesIO as the file handle
+    c = canvas.Canvas(buffer, pagesize=landscape(letter))
+    width, height = landscape(letter)
+
+    # Load the JPG template as the background
+    background = ImageReader(template_path)
+    c.drawImage(background, 0, 0, width=width, height=height)
+
+    # Donor's Name
+    c.setFont("Helvetica-Bold", 42)
+    c.setFillColorRGB(0, 0, 0)  # Black text for the name
+    c.drawCentredString(width / 2, height - 290, donor_name)
+
+    # Donation Date
+    c.setFont("Helvetica", 24)
+    c.setFillColorRGB(0, 0, 0)  # Black text for the name
+    c.drawString(140, 155, donation_date)
+
+    # Save the PDF to the buffer
+    c.save()
+
+    # Move the buffer's file pointer to the beginning
+    buffer.seek(0)
+
+    return buffer
+
+@login_required
+def download_certificate(request, donation_id):
+    try:
+        # Get the donation record using the donation_id
+        donation = Donation.objects.get(id=donation_id)
+    except Donation.DoesNotExist:
+        raise Http404("Donation not found")
+
+    # Get donor details
+    donor_name = donation.donor.first_name + ' ' + donation.donor.last_name  # Assuming the donor has a 'name' field
+    donation_date = donation.date_of_donation.strftime('%d-%m-%Y')
+
+    # Path to the template image
+    template_path = 'app/Template.png'
+
+    # Generate the certificate PDF
+    pdf_buffer = generate_custom_certificate_with_template(donor_name, donation_date, template_path)
+
+    # Return the PDF as a response
+    return FileResponse(pdf_buffer, as_attachment=True, filename=f"{donor_name}_certificate.pdf")

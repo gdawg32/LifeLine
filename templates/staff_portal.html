@@ -101,7 +101,9 @@
       <label for="add_recipient_modal" class="btn btn-primary">Add Recipient</label>
       <!-- View Recipients Button -->
       <label for="view_recipients_modal" class="btn btn-secondary">View All Recipients</label>
-  </div>
+      <!-- View Blood Request Button -->
+      <label for="view_blood_request_modal" class="btn btn-neutral" onclick="fetchBloodRequests()">View Blood Request</label>
+    </div>
 </div>
 
 <!-- Add Recipient Modal -->
@@ -209,6 +211,41 @@
   </div>
 </div>
 
+<!-- Modal for Viewing Blood Requests -->
+<dialog id="view_blood_request_modal" class="modal">
+  <div class="modal-box w-full max-w-5xl">
+    <h3 class="text-lg font-bold">Blood Requests</h3>
+    
+    <div class="overflow-x-auto">
+      <table class="table w-full">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Blood Type</th>
+            <th>Volume</th>
+            <th>Needed By</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="blood-requests-table">
+          <!-- Rows will be added here dynamically -->
+        </tbody>
+      </table>
+    </div>
+    <div class="items-center">
+    </div>
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">Close</button>
+      </form>
+    </div>
+  </div>
+</dialog>
+
 
 <!-- Appointment Modal -->
 <input type="checkbox" id="appointment_modal" class="modal-toggle" />
@@ -269,6 +306,7 @@
         <thead>
           <tr>
             <th>Donor</th>
+            <th>Blood Type</th>
             <th>Date</th>
             <th>Volume (ml)</th>
           </tr>
@@ -277,6 +315,7 @@
           {% for donation in donations %}
           <tr>
             <td>{{ donation.donor }}</td>
+            <td>{{ donation.donor.blood_type }}</td>
             <td>{{ donation.date_of_donation }}</td>
             <td class="flex items-center gap-1">
               <span class="badge badge-primary">{{ donation.used_volume }}</span>
@@ -295,6 +334,49 @@
 </div>
 
 <script>
+
+  function fetchBloodRequests() {
+    // Fetch the blood requests using the view URL
+    fetch('/view_blood_request/')
+      .then(response => response.json())
+      .then(data => {
+        const bloodRequests = data.blood_requests;
+        const tableBody = document.getElementById('blood-requests-table');
+  
+        // Clear any existing rows in the table
+        tableBody.innerHTML = '';
+  
+        // Populate the table with blood request data
+        bloodRequests.forEach(request => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${request.request_id}</td>
+            <td>${request.first_name} ${request.last_name}</td>
+            <td>${request.blood_type}</td>
+            <td>${request.volume}</td>
+            <td>${request.needed_by}</td>
+            <td>${request.urgency_level === 'Low' ? '<span class="badge badge-success">Low</span>' : 
+                request.urgency_level === 'Medium' ? '<span class="badge badge-warning">Medium</span>' : 
+                '<span class="badge badge-error">High</span>'}</td>
+            <td>${request.status || 'Pending'}</td>
+            <td>
+              <form method="post" action="/add_blood_request_to_recipient/${request.request_id}/" class="inline-block">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-xs">Add to Recipient</button>
+              </form>
+             </td>
+          `;
+          tableBody.appendChild(row);
+        });
+  
+        // Open the modal
+        document.getElementById('view_blood_request_modal').showModal();
+      })
+      .catch(error => {
+        console.error('Error fetching blood requests:', error);
+      });
+  }
+
   const dateEl = document.getElementById('date');
   const appointmentsListEl = document.getElementById('appointments-list');
 

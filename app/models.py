@@ -46,6 +46,25 @@ class Recipient(models.Model):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+class BloodRequest(models.Model):
+    request_id = models.AutoField(primary_key=True)
+    first_name = models.CharField(max_length=50)  # Recipient's first name
+    last_name = models.CharField(max_length=50)   # Recipient's last name
+    date_of_birth = models.DateField()  # Recipient's date of birth
+    gender = models.TextField()  # Recipient's gender
+    blood_type = models.TextField()  # Blood type being requested
+    volume = models.FloatField()  # Volume of blood required (in liters)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)  # Contact details
+    email = models.EmailField(max_length=100, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)  # Recipient's address
+    hospital = models.CharField(max_length=100, blank=True, null=True)  # Hospital where blood is needed
+    request_date = models.DateField(auto_now_add=True)  # Date of the request
+    needed_by = models.DateField()  # Deadline for when blood is required
+    urgency_level = models.CharField(max_length=20)  # Urgency level
+    status = models.CharField(max_length=20)  # Request status
+
+    def __str__(self):
+        return f"Request {self.request_id} for {self.volume}ml of {self.blood_type} blood"
 
 class Appointment(models.Model):
     donor = models.ForeignKey(Donor, on_delete=models.CASCADE)

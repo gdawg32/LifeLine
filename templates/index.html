@@ -43,15 +43,124 @@
 </section>
   
 <!-- Call to Action -->
-<section id="donate" class="bg-primary text-primary-content py-8 lg:py-12 text-center">
-    <div class="container mx-auto px-4">
-      <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Become a Donor Today!</h2>
-      <p class="mb-4 text-base md:text-lg lg:text-xl">Your blood donation can save up to three lives. Join our network of heroes today.</p>
-      <a href="/donors_signup" class="btn btn-secondary btn-lg">Sign Up to Donate</a>
-    </div>
+<section id="request" class="bg-primary text-primary-content py-8 lg:py-12 text-center">
+  <div class="container mx-auto px-4">
+    <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Request Blood Today!</h2>
+    <p class="mb-4 text-base md:text-lg lg:text-xl">In need of blood? We've got you covered. Request blood today and we'll make sure it reaches you as soon as possible.</p>
+    <!-- Button to open the modal -->
+    <button class="btn btn-secondary btn-lg" onclick="my_modal_1.showModal()">Request Blood</button>
+  </div>
 </section>
-  
 
+<!-- Modal Box with Blood Request Form -->
+<dialog id="my_modal_1" class="modal">
+<div class="modal-box">
+  <h3 class="text-lg font-bold mb-4">Blood Request Form</h3>
+  
+  <form id="blood-request-form" method="POST" action="{% url 'request_blood' %}">
+    <!-- CSRF Token for security if using Django -->
+    {% csrf_token %}
+
+    <!-- First Name -->
+    <div class="form-control mb-4">
+      <label class="label" for="first_name">First Name</label>
+      <input type="text" name="first_name" id="first_name" class="input input-bordered w-full" placeholder="Enter your first name" required>
+    </div>
+
+    <!-- Last Name -->
+    <div class="form-control mb-4">
+      <label class="label" for="last_name">Last Name</label>
+      <input type="text" name="last_name" id="last_name" class="input input-bordered w-full" placeholder="Enter your last name" required>
+    </div>
+
+    <!-- Date of Birth -->
+    <div class="form-control mb-4">
+      <label class="label" for="date_of_birth">Date of Birth</label>
+      <input type="date" name="date_of_birth" id="date_of_birth" class="input input-bordered w-full" required>
+    </div>
+
+    <!-- Gender -->
+    <div class="form-control mb-4">
+      <label class="label" for="gender">Gender</label>
+      <select name="gender" id="gender" class="select select-bordered w-full" required>
+        <option value="">Select your gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+    </div>
+
+    <!-- Blood Type -->
+    <div class="form-control mb-4">
+      <label class="label" for="blood_type">Blood Type</label>
+      <select name="blood_type" id="blood_type" class="select select-bordered w-full" required>
+        <option value="">Select your blood type</option>
+        <option value="A+">A+</option>
+        <option value="A-">A-</option>
+        <option value="B+">B+</option>
+        <option value="B-">B-</option>
+        <option value="AB+">AB+</option>
+        <option value="AB-">AB-</option>
+        <option value="O+">O+</option>
+        <option value="O-">O-</option>
+      </select>
+    </div>
+
+    <!-- Volume Required -->
+    <div class="form-control mb-4">
+      <label class="label" for="volume">Volume (in liters)</label>
+      <input type="number" name="volume" id="volume" step="0.1" class="input input-bordered w-full" placeholder="Enter required volume" required>
+    </div>
+
+    <!-- Phone Number -->
+    <div class="form-control mb-4">
+      <label class="label" for="phone_number">Phone Number</label>
+      <input type="tel" name="phone_number" id="phone_number" class="input input-bordered w-full" placeholder="Enter your phone number" >
+    </div>
+
+    <!-- Email -->
+    <div class="form-control mb-4">
+      <label class="label" for="email">Email</label>
+      <input type="email" name="email" id="email" class="input input-bordered w-full" placeholder="Enter your email address" >
+    </div>
+
+    <!-- Address -->
+    <div class="form-control mb-4">
+      <label class="label" for="address">Address</label>
+      <textarea name="address" id="address" class="textarea textarea-bordered w-full" placeholder="Enter your address" ></textarea>
+    </div>
+
+    <!-- Hospital -->
+    <div class="form-control mb-4">
+      <label class="label" for="hospital">Hospital</label>
+      <input type="text" name="hospital" id="hospital" class="input input-bordered w-full" placeholder="Enter hospital name">
+    </div>
+
+    <!-- Needed By -->
+    <div class="form-control mb-4">
+      <label class="label" for="needed_by">Needed By</label>
+      <input type="date" name="needed_by" id="needed_by" class="input input-bordered w-full" required>
+    </div>
+
+    <!-- Urgency Level -->
+    <div class="form-control mb-4">
+      <label class="label" for="urgency">Urgency Level</label>
+      <select name="urgency" id="urgency" class="select select-bordered w-full" required>
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+      </select>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="modal-action">
+      <button type="submit" class="btn btn-primary">Submit Request</button>
+      <!-- Close button in the form -->
+      <button class="btn" type="button" onclick="my_modal_1.close()">Close</button>
+    </div>
+  </form>
+</div>
+</dialog>
+  
 <!-- Blood Donation Journey Section -->
 <section class="bg-base-100 py-8 lg:py-12">
   <div class="container mx-auto px-4">

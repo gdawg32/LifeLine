@@ -5,3 +5,4 @@ from . models import *
 admin.site.register(Donor)
 admin.site.register(Donation)
 admin.site.register(Staff)
+admin.site.register(BloodRequest)

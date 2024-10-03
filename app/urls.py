@@ -16,4 +16,9 @@ urlpatterns = [
     path('staff_portal/appointments/<str:date>/', views.get_appointments, name='get_appointments'),
     path('staff_portal/add_donation/<int:appointment_id>/', views.add_donation, name='add_donation'),
     path('staff_portal/add_recipient/', views.add_recipient, name='add_recipient'),
+    path('request_blood/', views.request_blood, name='request_blood'),
+    path('view_blood_request/', views.view_blood_request, name='view_blood_request'),
+    path('add_blood_request_to_recipient/<int:request_id>/', views.add_blood_request_to_recipient, name='add_blood_request_to_recipient'),
+    path('download_certificate/<int:donation_id>/', views.download_certificate, name='download_certificate'),
+
 ]
